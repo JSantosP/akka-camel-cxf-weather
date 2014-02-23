@@ -5,7 +5,7 @@ This is an example of how to use akka-camel and cxf in order to connect with Wea
 
 Weather WS are described at [Weather Web Service](http://wsf.cdyne.com/WeatherWS/Weather.asmx)
 
-Java classes were generated using `apache-cxf 2.7.8` tool `wsdl2java` from weather wsdl file (located at `res/Weather.wsdl`).
+Java classes were generated using `apache-cxf` tool `wsdl2java` from weather wsdl file (located at `res/Weather.wsdl`).
 
 You can get extra information at:
 * [Akka-camel](http://doc.akka.io/docs/akka/2.2.3/scala/camel.html)
