@@ -16,9 +16,7 @@
 		<p>Due to the interaction with the web server must be done with XML, and just to avoid writing a lot of boilerplate, we will use the support that JAXB gives us. With CXF wsdl2java tool we are able to generate JAXB annotated Java classes using the WSDL document we talked about before</p>
 		<p>This can be achieved by executing this:</p>
 		<pre><code>
-			"
 			wsdl2java -client -d <output_directory> -p <package_name> -autoNameResolution <wsdl_file>`
-			"
 		</code></pre>
 		<p>Once these classes are generated, we're able to use them as sendable objects to camel endpoint.</p>
 	</div>
@@ -33,32 +31,30 @@
 		</ul>
 		<p>The code looks like this:</p>
 		<pre><code>
-			"
-			class MyProducerActor(responseMail: ActorRef) extends Actor {
-			  import helpers._
+class MyProducerActor(responseMail: ActorRef) extends Actor {
+  import helpers._
 
-			  val camel = CamelExtension(context.system)
+  val camel = CamelExtension(context.system)
 
-			  val uri = "cxf:http://wsf.cdyne.com/WeatherWS/Weather.asmx?" +
-			    "serviceClass=com.cdyne.ws.WeatherSoap"
+  val uri = "cxf:http://wsf.cdyne.com/WeatherWS/Weather.asmx?" +
+    "serviceClass=com.cdyne.ws.WeatherSoap"
 
-			  def receive = {
+  def receive = {
 
-			    case WeatherMessage(body, headers) =>
-			      camel.template.requestBodyAndHeaders(uri, body, headers) match {
+    case WeatherMessage(body, headers) =>
+      camel.template.requestBodyAndHeaders(uri, body, headers) match {
 
-			        case Response(List(awd: ArrayOfWeatherDescription)) => responseMail ! awd
+        case Response(List(awd: ArrayOfWeatherDescription)) => responseMail ! awd
 
-			        case Response(List(wr: WeatherReturn)) => responseMail ! wr
+        case Response(List(wr: WeatherReturn)) => responseMail ! wr
 
-			        case Response(List(fr: ForecastReturn)) => responseMail ! fr
+        case Response(List(fr: ForecastReturn)) => responseMail ! fr
 
-			      }
+      }
 
-			  }
+  }
 
-			}
-			"
+}
 		</code></pre>
 	</div>
 </body>
