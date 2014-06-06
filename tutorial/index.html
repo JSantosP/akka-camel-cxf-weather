@@ -1,0 +1,64 @@
+<body>	
+	<div>
+		<h2>Introduction</h2>
+		<p>This template encourages to use akka-camel module for supporting EIP(Enterprise Integration Patterns).</p>
+		<p>In this example It will be shown how to request weather information to <a href="http://wsf.cdyne.com/WeatherWS/Weather.asmx">CDYNE</a> weather public web service</p>
+		<p>It mainly has 3 methods:</p>
+			<ul>
+				<li>GetCityForecastByZIP: Allows you to get your City Forecast Over the Next 7 Days, which is updated hourly. U.S. Only</li>
+				<li>GetCityWeatherByZIP: Allows you to get your City's Weather, which is updated hourly. U.S. Only</li>
+				<li>GetWeatherInformation: Gets Information for each WeatherID</li>
+			</ul>
+		<p>The way to interact with these services is available at its <a href="http://wsf.cdyne.com/WeatherWS/Weather.asmx?WSDL">WSDL document</a></p>
+	</div>
+	<div>
+		<h2>JAXB annotated classes</h2>
+		<p>Due to the interaction with the web server must be done with XML, and just to avoid writing a lot of boilerplate, we will use the support that JAXB gives us. With CXF wsdl2java tool we are able to generate JAXB annotated Java classes using the WSDL document we talked about before</p>
+		<p>This can be achieved by executing this:</p>
+		<pre><code>
+			"
+			wsdl2java -client -d <output_directory> -p <package_name> -autoNameResolution <wsdl_file>`
+			"
+		</code></pre>
+		<p>Once these classes are generated, we're able to use them as sendable objects to camel endpoint.</p>
+	</div>
+	<div>
+		<h2>Camel producer</h2>
+		<p>Akka allows to integrate very easily with its camel module. In this example we're going to show how to implement an akka actor that receives 'weather objects' (let's call that way to the instances of the earlier generated classes) as requests and it will respond with some other 'weather objects'.</p>
+		<p>Main parts of this actor are:</p>
+		<ul>
+			<li>Camel extension: It should be called only once, to start camel module in our Akka system</li>
+			<li>URI: The endpoint uri where the target web service can be found</li>
+			<li>Receive method: This actor will wait for `WheatherMessage`s, that are mainly composed by a body and some headers. Once a message of this kind is received, it will be decomposed and forwarded to camel endpoint, waiting syncrhonously for the result, that will be sent to some responseMail we've declared before (like a sink).</li>
+		</ul>
+		<p>The code looks like this:</p>
+		<pre><code>
+			"
+			class MyProducerActor(responseMail: ActorRef) extends Actor {
+			  import helpers._
+
+			  val camel = CamelExtension(context.system)
+
+			  val uri = "cxf:http://wsf.cdyne.com/WeatherWS/Weather.asmx?" +
+			    "serviceClass=com.cdyne.ws.WeatherSoap"
+
+			  def receive = {
+
+			    case WeatherMessage(body, headers) =>
+			      camel.template.requestBodyAndHeaders(uri, body, headers) match {
+
+			        case Response(List(awd: ArrayOfWeatherDescription)) => responseMail ! awd
+
+			        case Response(List(wr: WeatherReturn)) => responseMail ! wr
+
+			        case Response(List(fr: ForecastReturn)) => responseMail ! fr
+
+			      }
+
+			  }
+
+			}
+			"
+		</code></pre>
+	</div>
+</body>
