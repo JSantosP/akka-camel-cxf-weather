@@ -1,26 +1,31 @@
-package org.jsantosp.akka.camel.cxf.weather
+package weatherws
 
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.WordSpecLike
 import org.scalatest.Matchers
-import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
-import akka.testkit.{ TestKit }
-import scala.concurrent.duration._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+import akka.testkit.{ TestActorRef, TestProbe, TestKit }
+import scala.concurrent.duration._
 import scala.collection.JavaConversions._
 import com.cdyne.ws._
+import helpers._
 
 @RunWith(classOf[JUnitRunner])
 class Test1
   extends TestKit(ActorSystem("MyActorSystem"))
   with WordSpecLike with Matchers with BeforeAndAfterAll {
 
+  val timeout = 10 seconds
+
   override def afterAll {
     TestKit.shutdownActorSystem(system)
   }
 
-  val myProducer = system.actorOf(Props[MyProducerActor])
+  val responseMailbox = TestProbe()
+
+  val myProducer = system.actorOf(Props(new MyProducerActor(responseMailbox.ref)))
 
   "A MyProducerActor" should {
     "get a propper response with GetWeatherInformation" in {
@@ -31,8 +36,10 @@ class Test1
         "operationName" -> operation,
         "soapAction" -> s"http://ws.cdyne.com/WeatherWS/$operation"))
 
+      println(system)
       myProducer ! request
-      Thread.sleep(2000)
+      val Seq(response: ArrayOfWeatherDescription) = responseMailbox.receiveN(1, timeout)
+      response.getWeatherDescription().toList map format foreach println
 
     }
   }
@@ -47,7 +54,8 @@ class Test1
         "soapAction" -> s"http://ws.cdyne.com/WeatherWS/$operation"))
 
       myProducer ! request
-      Thread.sleep(2000)
+      val Seq(response: WeatherReturn) = responseMailbox.receiveN(1, timeout)
+      println(format(response))
 
     }
   }
@@ -62,7 +70,8 @@ class Test1
         "soapAction" -> s"http://ws.cdyne.com/WeatherWS/$operation"))
 
       myProducer ! request
-      Thread.sleep(2000)
+      val Seq(response: ForecastReturn) = responseMailbox.receiveN(1, timeout)
+      println(format(response))
 
     }
   }

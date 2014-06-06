@@ -1,13 +1,17 @@
-package org.jsantosp.akka.camel.cxf.weather
+package weatherws
 
-import akka.actor.Actor
+import akka.actor.{Actor,ActorRef}
 import akka.camel.{ CamelExtension, Producer }
 import scala.collection.JavaConversions._
 import com.cdyne.ws._
 
+/** Special type of message for requesting weather information to WS.*/
 case class WeatherMessage(body: java.util.List[String], headers: java.util.Map[String, Object])
 
-class MyProducerActor extends Actor {
+/** 
+  * This actor receives ws requests and forward them to camel endpoint, waiting for results.
+  */
+class MyProducerActor(responseMail: ActorRef) extends Actor {
   import helpers._
 
   val camel = CamelExtension(context.system)
@@ -20,20 +24,13 @@ class MyProducerActor extends Actor {
     case WeatherMessage(body, headers) =>
       camel.template.requestBodyAndHeaders(uri, body, headers) match {
 
-        case Response(List(awd: ArrayOfWeatherDescription)) =>
-          awd.getWeatherDescription().toList map format foreach println
+        case Response(List(awd: ArrayOfWeatherDescription)) => responseMail ! awd
 
-        case Response(List(wr: WeatherReturn)) =>
-          println(format(wr))
+        case Response(List(wr: WeatherReturn)) => responseMail ! wr
 
-        case Response(List(fr: ForecastReturn)) =>
-          println(format(fr))
-
-        case response => println(response)
+        case Response(List(fr: ForecastReturn)) => responseMail ! fr
 
       }
-
-    case _ => ()
 
   }
 

@@ -1,8 +1,0 @@
-clean
-test:clean
-compile
-test:compile
-test-only org.jsantosp.akka.camel.cxf.weather.Test1
-clean
-test:clean
-exit
